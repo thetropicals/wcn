@@ -1,0 +1,42 @@
+clc;clear all;close all;
+pt1=input("Enter your message to be encrypted : ",'s');
+pt=double(char(pt1));
+key1=input("Enter your key : ",'s');
+key=double(char(key1));
+s=0:255;
+t1=[];
+for ii=1:256
+ if length(t1)<=256
+ z=t1;
+ t1=[key z];
+ else
+ break
+ end
+end
+t=t1(1:256);
+j=0;
+for ii=1:256
+ j=mod(j+s(ii)+t(mod(ii,length(t))+1),256)+1;
+ a=s(ii);
+ s(j)=s(ii); s(ii)=a;
+end
+j=0;
+kstr1=0;
+kstr=[];
+for ii=1:length(pt)
+ i=mod((ii+1),256);
+ j=mod((j+s(i)),256);
+ kstr1=s(mod((s(i)+s(j)),256));
+ kstr=[kstr kstr1];
+end
+keystream=kstr;
+ct=[];
+ptt=[];
+for ii=1:length(keystream)
+ ct1=bitxor(pt(ii),keystream(ii));
+ ct=[ct ct1];
+ ptt1=bitxor(ct(ii),keystream(ii));
+ ptt=[ptt ptt1];
+end
+Ciphertext=char(ct)
+Plaintext=char(ptt)

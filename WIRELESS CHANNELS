@@ -1,0 +1,107 @@
+clc;
+clear all;
+close all;
+n = 10000;
+i = randi([0,1],1,n);
+i1 = 2*i - 1;
+a = randn(1,n);
+b = randn(1,n);
+rc = 1/sqrt(2) * (sqrt(a.^2 + b.^2));
+% BER vs SNR
+figure;
+for l = 0:1:20
+ snr = 10^(l/10);
+ sdev = sqrt(0.5/snr);
+ N = random('norm',0,sdev,[1,n]);
+ yrc = rc .* i1 + N;
+ YR = (yrc >= 0);
+ ErrorR = sum((xor(YR,i)));
+ ber_R(l+1) = ErrorR/n;
+end
+q = 0:1:20;
+semilogy(q, ber_R(q+1), 'k-', 'LineWidth', 2);
+hold on;
+axis([0 20 10^-5 1]);
+xlabel('SNR (dB)');
+ylabel('BER');
+k1 = 10;
+mean_Rician = sqrt(k1/(k1+1));
+sigma_Rician = sqrt(1/(2*(k1+1)));
+Nr2 = randn(1,length(i1))*sigma_Rician + mean_Rician;
+Ni2 = randn(1,length(i1))*sigma_Rician;
+No3 = sqrt(Nr2.^2 + Ni2.^2);
+for k = 0:1:20
+ snr_Rician = 10^(k/10);
+ Np_Rician = 1/snr_Rician;
+ sd_Rician = sqrt(Np_Rician/2);
+ No_Rician = random('Normal', 0, sd_Rician, 1, length(i1));
+ t1 = i1.*No3 + No_Rician;
+ z1 = t1./No3;
+ op1_Rician = (z1 > 0);
+ Berr_Rician(k+1) = sum(xor(op1_Rician, i))/n;
+end
+k_AWGN = 0:1:20;
+for k = 0:1:20
+ snr_AWGN = 10^(k/10);
+ sdev_AWGN = sqrt(0.5/snr_AWGN);
+ N_AWGN = random('norm', 0, sdev_AWGN, [1, n]);
+ y_AWGN = i1 + N_AWGN;
+ YA = (y_AWGN >= 0);
+ Error_AWGN = sum((xor(YA, i)));
+ Berr_AWGN(k+1) = Error_AWGN/n;
+end
+semilogy(k_AWGN, Berr_AWGN(k_AWGN+1), '^-', 'DisplayName', 'AWGN Channel');
+semilogy(0:20, Berr_Rician, '*-', 'DisplayName', 'Rician Channel');
+title('BER Performance');
+xlabel('SNR (dB)');
+ylabel('BER');
+legend('Rayleigh Channel', 'AWGN Channel', 'Rician Channel', 'Location', 'best');
+grid on;
+
+
+% BER vs Channel Coefficient
+figure;
+k_values = 0:0.1:2;
+% Rayleigh channel
+for k_index = 1:length(k_values)
+ k = k_values(k_index);
+ a = randn(1,n);
+ b = randn(1,n);
+ rc = 1/sqrt(2) * (sqrt(a.^2 + b.^2));
+ y_rc = rc .* i1;
+ Y_rc = (y_rc >= 0);
+ Error_rc = sum((xor(Y_rc, i)));
+ ber_rc(k_index) = Error_rc/n;
+end
+% Rician channel
+for k_index = 1:length(k_values)
+ k = k_values(k_index);
+ mean_Rician = sqrt(k/(k+1));
+ sigma_Rician = sqrt(1/(2*(k+1)));
+ Nr = randn(1, n) * sigma_Rician + mean_Rician;
+ Ni = randn(1, n) * sigma_Rician;
+ No = sqrt(Nr.^2 + Ni.^2);
+ t_rician = i1 .* No;
+ z_rician = t_rician ./ No;
+ op_rician = (z_rician > 0);
+ Error_rician = sum(xor(op_rician, i));
+ ber_rician(k_index) = Error_rician/n;
+end
+% AWGN channel
+for k_index = 1:length(k_values)
+ k = k_values(k_index);
+ sdev_AWGN = sqrt(0.5);
+ N_AWGN = random('norm', 0, sdev_AWGN, [1, n]);
+ y_AWGN = i1 + N_AWGN;
+ YA_AWGN = (y_AWGN >= 0);
+ Error_AWGN = sum(xor(YA_AWGN, i));
+ ber_AWGN(k_index) = Error_AWGN/n;
+end
+semilogy(k_values, ber_rc, 'o-', 'DisplayName', 'Rayleigh Channel');
+semilogy(k_values, ber_rician, 's-', 'DisplayName', 'Rician Channel');
+semilogy(k_values, ber_AWGN, '^-', 'DisplayName', 'AWGN Channel');
+xlabel('Channel Coefficient (k)');
+ylabel('Bit Error Rate (BER)');
+legend('Location', 'best');
+title('BER vs Channel Coefficient for Rayleigh, Rician, and AWGN Channels');
+grid on

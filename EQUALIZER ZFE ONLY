@@ -1,0 +1,40 @@
+clc;
+clear all;
+close all;
+
+n = randi([0,1],1,10000);
+message=n;
+
+h = randn(1,10000) + 1i*randn(1,10000); % Random channel response (complex)
+y = pskmod(n,2); % BPSK modulation
+
+% Transmitted signal
+sig = y.*h;
+
+SNRdB = 0:20; % Range of SNR values in dB
+ber = zeros(size(SNRdB)); % Initialize BER vector
+ber1 = zeros(size(SNRdB))
+for snrIdx = 1:length(SNRdB)
+    snr = SNRdB(snrIdx);
+    % Add AWGN to the signal
+    noise = awgn(sig, snr);
+    % Equalization (Zero Forcing Equalizer)
+    eq = noise.*(1./h);
+    % Demodulate the received signal
+    demod = pskdemod(eq,2);
+    demod1= pskdemod(noise,2);
+    % Calculate BER
+    [num, rat] = biterr(demod, n);
+    ber(snrIdx) = rat;
+    [num1, rat1] = biterr(demod1, n);
+    ber1(snrIdx) = rat1;
+end
+
+% Plot BER vs. SNR
+semilogy(SNRdB, ber, '-k','LineWidth',1.2);
+grid on;
+hold on;
+semilogy(SNRdB, ber1, '--k','LineWidth',1.2);
+title('Bit Error Rate vs. SNR');
+legend('BER with equalizer','BER without equalizer');
+grid on;
